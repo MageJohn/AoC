@@ -15,6 +15,10 @@ const InstrResult = struct {
 /// - error.InvalidInput if there are any characters other than ')' and '('.
 /// - InstrResult with the final floor and basement values otherwise.
 pub fn followInstr(instr_stream: io.StreamSource.InStream) !InstrResult {
+    // Makes sure zig always panics safely in case the input overflows the 64
+    // bit integers.
+    @setRuntimeSafety(true);
+
     var res = InstrResult{};
     var found_basement = false;
 
@@ -99,7 +103,13 @@ pub fn main() !void {
     const stdin = (io.StreamSource{ .file = io.getStdIn() }).inStream();
     const stdout = io.getStdOut().outStream();
 
-    const res = try followInstr(stdin);
+    const res = followInstr(stdin) catch |err| switch (err) {
+        error.InvalidInput => {
+            //std.debug.warn("Error: Invalid character encountered\n", .{});
+            return err;
+        },
+        else => unreachable,
+    };
 
     try stdout.print("Santa ends up on floor number {}\n", .{res.floor});
     try stdout.print("The first instruction to send him into the basement was at position {}\n", .{res.basement});
