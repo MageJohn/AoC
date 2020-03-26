@@ -2,6 +2,7 @@ const std = @import("std");
 const io = std.io;
 const expectEqual = std.testing.expectEqual;
 const expectError = std.testing.expectError;
+const utils = @import("utils.zig");
 
 const InstrResult = struct {
     floor: i64 = 0,
@@ -50,8 +51,8 @@ pub fn followInstr(instr_stream: io.StreamSource.InStream) !InstrResult {
 }
 
 fn expectSameFloor(a: []const u8, b: []const u8, floor: i64) void {
-    const instream1 = (io.StreamSource{ .const_buffer = io.fixedBufferStream(a) }).inStream();
-    const instream2 = (io.StreamSource{ .const_buffer = io.fixedBufferStream(b) }).inStream();
+    const instream1 = utils.fixedBufferStreamSource(a).inStream();
+    const instream2 = utils.fixedBufferStreamSource(b).inStream();
 
     const res1 = followInstr(instream1) catch unreachable;
     const res2 = followInstr(instream2) catch unreachable;
@@ -69,7 +70,7 @@ test "example 2: both 3" {
 }
 
 test "example 3: difference" {
-    const instream = (io.StreamSource{ .const_buffer = io.fixedBufferStream("))(((((") }).inStream();
+    const instream = utils.fixedBufferStreamSource("))(((((").inStream();
     const res = try followInstr(instream);
     expectEqual(res.floor, 3);
 }
@@ -83,19 +84,19 @@ test "example 5: both -3" {
 }
 
 test "example 6: basement at position 1" {
-    const instream = (io.StreamSource{ .const_buffer = io.fixedBufferStream(")") }).inStream();
+    const instream = utils.fixedBufferStreamSource(")").inStream();
     const res = try followInstr(instream);
     expectEqual(res.basement, 1);
 }
 
 test "example 7: basement at position 5" {
-    const instream = (io.StreamSource{ .const_buffer = io.fixedBufferStream("()())") }).inStream();
+    const instream = utils.fixedBufferStreamSource("()())").inStream();
     const res = try followInstr(instream);
     expectEqual(res.basement, 5);
 }
 
 test "invalid input" {
-    const instream = (io.StreamSource{ .const_buffer = io.fixedBufferStream("hello santa") }).inStream();
+    const instream = utils.fixedBufferStreamSource("hello santa").inStream();
     expectError(error.InvalidInput, followInstr(instream));
 }
 
