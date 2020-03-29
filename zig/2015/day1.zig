@@ -15,7 +15,7 @@ const InstrResult = struct {
 /// Returns:
 /// - error.InvalidInput if there are any characters other than ')' and '('.
 /// - InstrResult with the final floor and basement values otherwise.
-pub fn followInstr(instr_stream: io.StreamSource.InStream) !InstrResult {
+pub fn followInstr(instr_stream: var) !InstrResult {
     // Makes sure zig always panics safely in case the input overflows the 64
     // bit integers.
     @setRuntimeSafety(true);
@@ -51,8 +51,8 @@ pub fn followInstr(instr_stream: io.StreamSource.InStream) !InstrResult {
 }
 
 fn expectSameFloor(a: []const u8, b: []const u8, floor: i64) void {
-    const instream1 = utils.fixedBufferStreamSource(a).inStream();
-    const instream2 = utils.fixedBufferStreamSource(b).inStream();
+    const instream1 = io.fixedBufferStream(a).inStream();
+    const instream2 = io.fixedBufferStream(b).inStream();
 
     const res1 = followInstr(instream1) catch unreachable;
     const res2 = followInstr(instream2) catch unreachable;
@@ -70,7 +70,7 @@ test "example 2: both 3" {
 }
 
 test "example 3: difference" {
-    const instream = utils.fixedBufferStreamSource("))(((((").inStream();
+    const instream = io.fixedBufferStream("))(((((").inStream();
     const res = try followInstr(instream);
     expectEqual(res.floor, 3);
 }
@@ -84,33 +84,27 @@ test "example 5: both -3" {
 }
 
 test "example 6: basement at position 1" {
-    const instream = utils.fixedBufferStreamSource(")").inStream();
+    const instream = io.fixedBufferStream(")").inStream();
     const res = try followInstr(instream);
     expectEqual(res.basement, 1);
 }
 
 test "example 7: basement at position 5" {
-    const instream = utils.fixedBufferStreamSource("()())").inStream();
+    const instream = io.fixedBufferStream("()())").inStream();
     const res = try followInstr(instream);
     expectEqual(res.basement, 5);
 }
 
 test "invalid input" {
-    const instream = utils.fixedBufferStreamSource("hello santa").inStream();
+    const instream = io.fixedBufferStream("hello santa").inStream();
     expectError(error.InvalidInput, followInstr(instream));
 }
 
 pub fn main() !void {
-    const stdin = (io.StreamSource{ .file = io.getStdIn() }).inStream();
+    const stdin = io.getStdIn().inStream();
     const stdout = io.getStdOut().outStream();
 
-    const res = followInstr(stdin) catch |err| switch (err) {
-        error.InvalidInput => {
-            //std.debug.warn("Error: Invalid character encountered\n", .{});
-            return err;
-        },
-        else => unreachable,
-    };
+    const res = try followInstr(stdin);
 
     try stdout.print("Santa ends up on floor number {}\n", .{res.floor});
     try stdout.print("The first instruction to send him into the basement was at position {}\n", .{res.basement});

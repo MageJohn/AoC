@@ -1,11 +1,8 @@
 const std = @import("std");
 const io = std.io;
 const expectEqual = std.testing.expectEqual;
-const utils = @import("utils.zig");
 
 const InvalidInput = error.InvalidInput;
-
-const warn = std.debug.warn;
 
 fn extractDims(dimString: []const u8) ![3]u8 {
     var dims: [3]u8 = undefined;
@@ -83,7 +80,7 @@ test "calculating ribbon length" {
     expectEqual(ribbonLength(.{ 29, 13, 26 }), 9880);
 }
 
-pub fn totalling(input: io.StreamSource.InStream) ![2]u64 {
+pub fn totalling(input: var) ![2]u64 {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
@@ -106,12 +103,12 @@ pub fn totalling(input: io.StreamSource.InStream) ![2]u64 {
 }
 
 test "reading an input stream" {
-    const input = utils.fixedBufferStreamSource("2x3x4\n1x1x10\n").inStream();
+    const input = io.fixedBufferStream("2x3x4\n1x1x10\n").inStream();
     expectEqual(try totalling(input), [2]u64{ 101, 48 });
 }
 
 pub fn main() !void {
-    const stdin = (io.StreamSource{ .file = io.getStdIn() }).inStream();
+    const stdin = io.getStdIn().inStream();
     const stdout = io.getStdOut().outStream();
 
     const totals = try totalling(stdin);
